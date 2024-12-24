@@ -1,0 +1,134 @@
+---
+# ======================================
+# Deployments para Node.js v1 e v2
+# ======================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-app-v1
+  labels:
+    app: nodejs-app
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nodejs-app
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: nodejs-app
+        version: v1
+    spec:
+      containers:
+      - name: nodejs-app
+        image: mhsource/nodes:v1
+        ports:
+        - containerPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-app-v2
+  labels:
+    app: nodejs-app
+    version: v2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nodejs-app
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: nodejs-app
+        version: v2
+    spec:
+      containers:
+      - name: nodejs-app
+        image: mhsource/nodes:v2
+        ports:
+        - containerPort: 3000
+---
+# ======================================
+# Service para Node.js
+# ======================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-service
+  labels:
+    app: nodejs-app
+spec:
+  selector:
+    app: nodejs-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+# ======================================
+# DestinationRule para Istio
+# ======================================
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: nodejs-destinationrule
+spec:
+  host: nodejs-service
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+# ======================================
+# Gateway para Istio
+# ======================================
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: nodejs-gateway
+spec:
+  selector:
+    istio: ingressgateway # Usa o ingress gateway padrão do Istio
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*" # Substitua por domínios específicos se necessário
+---
+# ======================================
+# VirtualService para Roteamento por Headers
+# ======================================
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: nodejs-virtualservice
+spec:
+  hosts:
+  - "*" # Substitua por domínios específicos se necessário
+  gateways:
+  - nodejs-gateway
+  http:
+  - match:
+    - headers:
+        client-id:
+          exact: "client123"   # Substitua pelo valor desejado
+        tenant:
+          exact: "tenantA"     # Substitua pelo valor desejado
+    route:
+    - destination:
+        host: nodejs-service
+        subset: v2
+  - route:
+    - destination:
+        host: nodejs-service
+        subset: v1
