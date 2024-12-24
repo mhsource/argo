@@ -121,7 +121,7 @@ spec:
   - match:
     - headers:
         client-id:
-          exact: "client123"   # Substitua pelo valor desejado
+          exact: "client1234"   # Substitua pelo valor desejado
         tenant:
           exact: "tenantA"     # Substitua pelo valor desejado
     route:
