@@ -114,21 +114,46 @@ metadata:
   name: nodejs-virtualservice
 spec:
   hosts:
-  - "*" # Substitua por domínios específicos se necessário
+  - "*"  # Substitua por domínios específicos se necessário
   gateways:
   - nodejs-gateway
   http:
+  # Condição 1
   - match:
     - headers:
         client-id:
-          exact: "client1"   # Substitua pelo valor desejado
+          exact: "client1"
         tenant:
-          exact: "tenantA"     # Substitua pelo valor desejado
+          exact: "tenantA"
     route:
     - destination:
         host: nodejs-service
         subset: v2
+  # Condição 2
+  - match:
+    - headers:
+        client-id:
+          exact: "client2"
+        tenant:
+          exact: "tenantB"
+    route:
+    - destination:
+        host: nodejs-service
+        subset: v1
+  # Condição 3 (e assim por diante...)
+  - match:
+    - headers:
+        client-id:
+          exact: "client3"
+        tenant:
+          exact: "tenantC"
+    route:
+    - destination:
+        host: nodejs-service
+        subset: v2
+  # Rota padrão
   - route:
     - destination:
         host: nodejs-service
         subset: v1
+
